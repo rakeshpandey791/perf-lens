@@ -12,6 +12,10 @@ services:
         value: "4000"
       - key: UPLOAD_MAX_MB
         value: "200"
+      - key: UPLOAD_DIR
+        value: /tmp/perf-lens/uploads
+      - key: TEMP_DIR
+        value: /tmp/perf-lens/temp
       - key: JWT_SECRET
         sync: false
       - key: DATABASE_URL
