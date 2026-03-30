@@ -3,13 +3,11 @@ services:
     name: perf-lens-api
     runtime: node
     rootDir: .
-    buildCommand: npm install && npm run build -w server && npm run build -w worker
+    buildCommand: npm install --include=dev && npm run build -w server && npm run build -w worker
     startCommand: sh -c "node worker/dist/index.js & node server/dist/index.js & wait -n"
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: PORT
         value: "4000"
       - key: UPLOAD_MAX_MB
@@ -45,7 +43,7 @@ services:
     name: perf-lens-client
     runtime: static
     rootDir: .
-    buildCommand: npm install && npm run build -w client
+    buildCommand: npm install --include=dev && npm run build -w client
     staticPublishPath: client/dist
     autoDeploy: true
     envVars:
