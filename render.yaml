@@ -2,7 +2,6 @@ services:
   - type: web
     name: perf-lens-api
     runtime: node
-    plan: free
     rootDir: .
     buildCommand: npm install && npm run build -w server && npm run build -w worker
     startCommand: sh -c "node worker/dist/index.js & node server/dist/index.js & wait -n"
@@ -45,9 +44,9 @@ services:
   - type: web
     name: perf-lens-client
     runtime: static
-    rootDir: client
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    rootDir: .
+    buildCommand: npm install && npm run build -w client
+    staticPublishPath: client/dist
     autoDeploy: true
     envVars:
       - key: VITE_API_BASE_URL
