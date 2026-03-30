@@ -4,7 +4,7 @@ services:
     runtime: node
     rootDir: .
     buildCommand: npm install --include=dev && npm run build -w server && npm run build -w worker
-    startCommand: sh -c "node worker/dist/index.js & node server/dist/index.js & wait -n"
+    startCommand: sh -c "node worker/dist/index.js & exec node server/dist/index.js"
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
