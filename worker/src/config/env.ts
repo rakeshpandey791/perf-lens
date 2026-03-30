@@ -8,9 +8,13 @@ const serverRoot = path.resolve(workerRoot, "../server");
 dotenv.config({ path: path.join(serverRoot, ".env") });
 dotenv.config();
 const tempDir = process.env.TEMP_DIR?.trim() ? process.env.TEMP_DIR : path.join(serverRoot, "temp");
+const databaseSsl = String(process.env.DATABASE_SSL ?? "false").toLowerCase() === "true";
+const redisUrl = process.env.REDIS_URL?.trim() ?? "";
 
 export const env = {
   databaseUrl: process.env.DATABASE_URL ?? "postgresql://127.0.0.1:5432/perf_lens",
+  databaseSsl,
+  redisUrl,
   redisHost: process.env.REDIS_HOST ?? "127.0.0.1",
   redisPort: Number(process.env.REDIS_PORT ?? 6379),
   tempDir

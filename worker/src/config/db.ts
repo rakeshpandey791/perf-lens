@@ -2,7 +2,8 @@ import { Pool } from "pg";
 import { env } from "./env.js";
 
 export const db = new Pool({
-  connectionString: env.databaseUrl
+  connectionString: env.databaseUrl,
+  ssl: env.databaseSsl ? { rejectUnauthorized: false } : undefined
 });
 
 export async function connectDb(): Promise<void> {
