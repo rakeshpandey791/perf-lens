@@ -1,13 +1,27 @@
 import { Redis } from "ioredis";
 import { env } from "./env.js";
 
-const redisEndpoint = env.redisUrl || env.redisHost;
-const isRedisUri = /^rediss?:\/\//i.test(redisEndpoint);
+function buildRedisConnection(): Redis {
+  const explicitUrl = env.redisUrl.trim();
+  if (explicitUrl) {
+    return new Redis(explicitUrl, { maxRetriesPerRequest: null });
+  }
 
-export const redisConnection = isRedisUri
-  ? new Redis(redisEndpoint, { maxRetriesPerRequest: null })
-  : new Redis({
-      host: redisEndpoint,
-      port: env.redisPort,
-      maxRetriesPerRequest: null
-    });
+  const rawHost = env.redisHost.trim();
+  if (/^rediss?:\/\//i.test(rawHost)) {
+    return new Redis(rawHost, { maxRetriesPerRequest: null });
+  }
+
+  const hostWithoutScheme = rawHost.replace(/^rediss?:\/\//i, "");
+  const [hostPart, portPart] = hostWithoutScheme.split(":");
+  const host = hostPart.replace(/\/.*$/, "").trim();
+  const port = Number(portPart?.trim() || env.redisPort);
+
+  return new Redis({
+    host,
+    port: Number.isFinite(port) ? port : env.redisPort,
+    maxRetriesPerRequest: null
+  });
+}
+
+export const redisConnection = buildRedisConnection();
