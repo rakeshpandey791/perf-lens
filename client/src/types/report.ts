@@ -12,6 +12,7 @@ export type ReportIssue = {
 export type Report = {
   jobId: string;
   userId: string;
+  projectName: string;
   status: "queued" | "processing" | "completed" | "failed";
   summary: {
     totalFiles: number;

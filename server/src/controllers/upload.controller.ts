@@ -22,9 +22,10 @@ export async function uploadProject(req: Request, res: Response): Promise<void> 
   }
 
   const reportId = uuidv4();
+  const projectName = getProjectNameFromZip(req.file.originalname);
 
   try {
-    await createQueuedReportForUser(reportId, req.user.id);
+    await createQueuedReportForUser(reportId, req.user.id, projectName);
   } catch (error) {
     if (error instanceof Error && error.name === "FREE_PLAN_LIMIT_REACHED") {
       res.status(402).json({
@@ -67,8 +68,9 @@ export async function analyzeGithubRepo(req: Request, res: Response): Promise<vo
   }
 
   const reportId = uuidv4();
+  const projectName = getProjectNameFromRepoUrl(repoUrl);
   try {
-    await createQueuedReportForUser(reportId, req.user.id);
+    await createQueuedReportForUser(reportId, req.user.id, projectName);
   } catch (error) {
     if (error instanceof Error && error.name === "FREE_PLAN_LIMIT_REACHED") {
       res.status(402).json({
@@ -94,4 +96,24 @@ export async function analyzeGithubRepo(req: Request, res: Response): Promise<vo
 
 function isValidGithubUrl(url: string): boolean {
   return /^https:\/\/(www\.)?github\.com\/[^/\s]+\/[^/\s]+(?:\.git)?\/?$/i.test(url);
+}
+
+function getProjectNameFromZip(fileName: string): string {
+  const baseName = fileName.replace(/\.zip$/i, "").trim();
+  return baseName.length > 0 ? baseName : "Uploaded ZIP Project";
+}
+
+function getProjectNameFromRepoUrl(repoUrl: string): string {
+  try {
+    const parsed = new URL(repoUrl);
+    const cleanedPath = parsed.pathname.replace(/\/+$/, "").replace(/\.git$/i, "");
+    const segments = cleanedPath.split("/").filter(Boolean);
+    if (segments.length >= 2) {
+      return `${segments[segments.length - 2]}/${segments[segments.length - 1]}`;
+    }
+  } catch {
+    // Fallback below
+  }
+
+  return "GitHub Repository";
 }

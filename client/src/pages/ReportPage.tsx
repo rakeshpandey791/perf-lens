@@ -62,6 +62,9 @@ export default function ReportPage(): JSX.Element {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">Processing</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900">Generating Your Performance Report</h1>
+          <p className="mt-2 text-sm text-slate-700">
+            Project: <span className="font-semibold">{data.projectName}</span>
+          </p>
           <p className="mt-2 text-sm text-slate-600">
             Status: <span className="font-semibold capitalize text-slate-800">{data.status}</span>. We auto-refresh every 3
             seconds.
@@ -105,6 +108,9 @@ export default function ReportPage(): JSX.Element {
     return (
       <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-700">
         <p className="font-medium">Analysis failed</p>
+        <p className="mt-1 text-sm text-rose-800">
+          Project: <span className="font-semibold">{data.projectName}</span>
+        </p>
         <p className="mt-1 text-sm">{data.error ?? "Please retry with a valid frontend source (ZIP upload or GitHub URL)."}</p>
       </div>
     );
@@ -191,6 +197,7 @@ export default function ReportPage(): JSX.Element {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600">Performance Report</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">Analysis Summary</h1>
+            <p className="mt-2 text-base font-semibold text-slate-900">Project: {data.projectName}</p>
             <p className="mt-2 text-sm text-slate-600">
               This report highlights where bundle size, component complexity, and render patterns are most likely
               slowing your app.

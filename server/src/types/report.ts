@@ -4,6 +4,7 @@ export type IssueProgressStatus = "todo" | "in-progress" | "completed";
 export type ReportRecord = {
   jobId: string;
   userId: string;
+  projectName: string;
   status: ReportStatus;
   summary: {
     totalFiles: number;

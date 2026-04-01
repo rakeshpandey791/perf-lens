@@ -32,6 +32,7 @@ export async function connectDb(): Promise<void> {
     CREATE TABLE IF NOT EXISTS reports (
       job_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
+      project_name TEXT NOT NULL DEFAULT 'Untitled Project',
       status TEXT NOT NULL,
       summary JSONB NOT NULL DEFAULT '{}'::jsonb,
       bundle_insights JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -46,6 +47,8 @@ export async function connectDb(): Promise<void> {
     )
   `);
   await db.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS user_id TEXT`);
+  await db.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS project_name TEXT NOT NULL DEFAULT 'Untitled Project'`);
+  await db.query(`UPDATE reports SET project_name = 'Untitled Project' WHERE project_name IS NULL OR BTRIM(project_name) = ''`);
   await db.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS issue_progress JSONB NOT NULL DEFAULT '{}'::jsonb`);
   await db.query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS detected_frameworks JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile JSONB NOT NULL DEFAULT '{}'::jsonb`);

@@ -4,6 +4,7 @@ import type { IssueProgressStatus, ReportRecord, ReportStatus } from "../types/r
 type ReportRow = {
   job_id: string;
   user_id: string;
+  project_name: string;
   status: ReportStatus;
   summary: unknown;
   detected_frameworks: unknown;
@@ -26,7 +27,7 @@ const defaultBundleInsights = {
   rerenderRiskCount: 0
 };
 
-export async function createQueuedReportForUser(jobId: string, userId: string): Promise<void> {
+export async function createQueuedReportForUser(jobId: string, userId: string, projectName: string): Promise<void> {
   const client = await db.connect();
 
   try {
@@ -86,10 +87,10 @@ export async function createQueuedReportForUser(jobId: string, userId: string): 
 
     await client.query(
       `
-        INSERT INTO reports (job_id, user_id, status, summary, bundle_insights, largest_files, issues, suggestions)
-        VALUES ($1, $2, 'queued', $3::jsonb, $4::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)
+        INSERT INTO reports (job_id, user_id, project_name, status, summary, bundle_insights, largest_files, issues, suggestions)
+        VALUES ($1, $2, $3, 'queued', $4::jsonb, $5::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb)
       `,
-      [jobId, userId, JSON.stringify(defaultSummary), JSON.stringify(defaultBundleInsights)]
+      [jobId, userId, normalizeProjectName(projectName), JSON.stringify(defaultSummary), JSON.stringify(defaultBundleInsights)]
     );
 
     await client.query("COMMIT");
@@ -104,7 +105,7 @@ export async function createQueuedReportForUser(jobId: string, userId: string): 
 export async function findReportByJobIdForUser(jobId: string, userId: string): Promise<ReportRecord | null> {
   const result = await db.query<ReportRow>(
     `
-      SELECT job_id, user_id, status, summary, detected_frameworks, bundle_insights, largest_files, issues, suggestions, issue_progress, error, created_at, updated_at
+      SELECT job_id, user_id, project_name, status, summary, detected_frameworks, bundle_insights, largest_files, issues, suggestions, issue_progress, error, created_at, updated_at
       FROM reports
       WHERE job_id = $1 AND user_id = $2
     `,
@@ -122,7 +123,7 @@ export async function findReportByJobIdForUser(jobId: string, userId: string): P
 export async function listReportsForUser(userId: string): Promise<ReportRecord[]> {
   const result = await db.query<ReportRow>(
     `
-      SELECT job_id, user_id, status, summary, detected_frameworks, bundle_insights, largest_files, issues, suggestions, issue_progress, error, created_at, updated_at
+      SELECT job_id, user_id, project_name, status, summary, detected_frameworks, bundle_insights, largest_files, issues, suggestions, issue_progress, error, created_at, updated_at
       FROM reports
       WHERE user_id = $1
       ORDER BY created_at DESC
@@ -158,6 +159,7 @@ function toReportRecord(row: ReportRow): ReportRecord {
   return {
     jobId: row.job_id,
     userId: row.user_id,
+    projectName: normalizeProjectName(row.project_name),
     status: row.status,
     summary: (row.summary as ReportRecord["summary"]) ?? defaultSummary,
     detectedFrameworks: normalizeDetectedFrameworks(row.detected_frameworks),
@@ -170,6 +172,11 @@ function toReportRecord(row: ReportRow): ReportRecord {
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString()
   };
+}
+
+function normalizeProjectName(value: string | null | undefined): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return normalized.length > 0 ? normalized : "Untitled Project";
 }
 
 function normalizeDetectedFrameworks(value: unknown): string[] {

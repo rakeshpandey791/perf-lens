@@ -273,17 +273,18 @@ export default function UploadPage(): JSX.Element {
                 <Link
                   key={report.jobId}
                   to={`/report/${report.jobId}`}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-brand-300 hover:bg-brand-50/40"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-900">Report {report.jobId.slice(0, 8)}</p>
-                    <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-700">
-                      {report.status}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Score {report.summary.performanceScore}/100 · Issues {report.summary.totalIssues}
-                  </p>
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-brand-300 hover:bg-brand-50/40"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-900">{report.projectName}</p>
+                  <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-slate-700">
+                    {report.status}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">Report ID: {report.jobId.slice(0, 8)}</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Score {report.summary.performanceScore}/100 · Issues {report.summary.totalIssues}
+                </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {report.detectedFrameworks.slice(0, 2).map((framework) => (
                       <span
