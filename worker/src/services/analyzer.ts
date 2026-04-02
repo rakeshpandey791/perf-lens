@@ -37,6 +37,9 @@ const CODE_EXTENSIONS = new Set([
   ".astro"
 ]);
 const HEAVY_LIBRARIES = new Set(["lodash", "moment", "ramda", "date-fns"]);
+const LARGE_FILE_LOW_KB = 50;
+const LARGE_FILE_MEDIUM_KB = 90;
+const LARGE_FILE_HIGH_KB = 150;
 
 export async function analyzeProject(projectRoot: string): Promise<AnalyzerResult> {
   const files = await collectCodeFiles(projectRoot);
@@ -61,9 +64,14 @@ export async function analyzeProject(projectRoot: string): Promise<AnalyzerResul
   const largestFiles = [...fileSizes].sort((a, b) => b.sizeBytes - a.sizeBytes).slice(0, 10);
 
   for (const file of largestFiles) {
+    if (file.sizeKB < LARGE_FILE_LOW_KB) {
+      continue;
+    }
+
+    const severity = file.sizeKB >= LARGE_FILE_HIGH_KB ? "high" : file.sizeKB >= LARGE_FILE_MEDIUM_KB ? "medium" : "low";
     issues.push({
       type: "large-file",
-      severity: file.sizeKB > 80 ? "high" : "medium",
+      severity,
       filePath: file.relativePath,
       message: `Large file detected (${file.sizeKB} KB). Consider splitting modules.`,
       meta: { sizeKB: file.sizeKB }
@@ -228,7 +236,7 @@ export async function analyzeProject(projectRoot: string): Promise<AnalyzerResul
   const summary = {
     totalFiles: files.length,
     totalIssues: issues.length,
-    performanceScore: computePerformanceScore(issues)
+    performanceScore: computePerformanceScore(issues, files.length)
   };
 
   return {
@@ -479,22 +487,57 @@ function hasFilePrefix(files: Set<string>, prefix: string): boolean {
   return false;
 }
 
-function computePerformanceScore(issues: AnalyzerIssue[]): number {
-  let score = 100;
-
-  for (const issue of issues) {
-    if (issue.severity === "high") {
-      score -= 8;
-      continue;
-    }
-
-    if (issue.severity === "medium") {
-      score -= 4;
-      continue;
-    }
-
-    score -= 2;
+function computePerformanceScore(issues: AnalyzerIssue[], totalFiles: number): number {
+  if (issues.length === 0) {
+    return 100;
   }
 
-  return Math.max(score, 0);
+  const severityWeights: Record<string, number> = {
+    high: 5,
+    medium: 3,
+    low: 1.5
+  };
+
+  const typeWeights: Record<string, number> = {
+    "large-import": 3.2,
+    "large-file": 2.4,
+    "component-complexity": 2.8,
+    "deeply-nested-jsx": 2.2,
+    "inline-jsx-function": 1.2,
+    "missing-react-memo": 0.9
+  };
+
+  const typeCaps: Record<string, number> = {
+    "large-import": 22,
+    "large-file": 18,
+    "component-complexity": 20,
+    "deeply-nested-jsx": 16,
+    "inline-jsx-function": 14,
+    "missing-react-memo": 8,
+    default: 12
+  };
+
+  const impactByType = new Map<string, number>();
+
+  for (const issue of issues) {
+    const severityWeight = severityWeights[issue.severity] ?? severityWeights.medium;
+    const typeWeight = typeWeights[issue.type] ?? 1.5;
+    const incrementalImpact = severityWeight * typeWeight;
+    impactByType.set(issue.type, (impactByType.get(issue.type) ?? 0) + incrementalImpact);
+  }
+
+  let totalImpact = 0;
+  for (const [type, impact] of impactByType.entries()) {
+    totalImpact += Math.min(impact, typeCaps[type] ?? typeCaps.default);
+  }
+
+  const repoScale = clamp(Math.sqrt(Math.max(totalFiles, 1) / 20), 0.8, 1.8);
+  const normalizedImpact = totalImpact / repoScale;
+  const rawScore = 100 - normalizedImpact;
+
+  return clamp(Math.round(rawScore), 0, 100);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
