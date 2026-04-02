@@ -10,6 +10,19 @@ export type ReportRecord = {
     totalFiles: number;
     totalIssues: number;
     performanceScore: number;
+    issueDensity?: number;
+    severityDistribution?: {
+      high: number;
+      medium: number;
+      low: number;
+    };
+    subScores?: {
+      bundle: number;
+      rendering: number;
+      complexity: number;
+      maintainability: number;
+    };
+    methodologyVersion?: string;
   };
   detectedFrameworks: string[];
   bundleInsights: {
@@ -26,6 +39,12 @@ export type ReportRecord = {
   issues: Array<{
     type: string;
     severity: string;
+    priority?: "P0" | "P1" | "P2" | "P3";
+    confidence?: number;
+    estimatedEffort?: "S" | "M" | "L";
+    probableSolution?: string;
+    weightedImpact?: number;
+    reach?: "limited" | "module" | "critical-path";
     filePath: string;
     message: string;
     line?: number;

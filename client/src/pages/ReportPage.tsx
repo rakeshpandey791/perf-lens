@@ -146,14 +146,19 @@ export default function ReportPage(): JSX.Element {
   });
 
   const severityRank: Record<string, number> = { high: 3, medium: 2, low: 1 };
+  const priorityRank: Record<string, number> = { P0: 4, P1: 3, P2: 2, P3: 1 };
   const statusRank: Record<IssueProgressStatus, number> = { todo: 1, "in-progress": 2, completed: 3 };
 
   const sortedIssues = [...filteredIssues].sort((a, b) => {
     if (sortBy === "priority-desc") {
-      return severityRank[b.severity] - severityRank[a.severity];
+      const aPriority = priorityRank[a.priority ?? "P3"] * 10 + severityRank[a.severity];
+      const bPriority = priorityRank[b.priority ?? "P3"] * 10 + severityRank[b.severity];
+      return bPriority - aPriority;
     }
     if (sortBy === "priority-asc") {
-      return severityRank[a.severity] - severityRank[b.severity];
+      const aPriority = priorityRank[a.priority ?? "P3"] * 10 + severityRank[a.severity];
+      const bPriority = priorityRank[b.priority ?? "P3"] * 10 + severityRank[b.severity];
+      return aPriority - bPriority;
     }
     if (sortBy === "status") {
       const aStatus = data.issueProgress[getIssueKey(a)] ?? "todo";
@@ -164,6 +169,7 @@ export default function ReportPage(): JSX.Element {
   });
 
   const visibleIssues = sortedIssues.slice(0, visibleIssueCount);
+  const shownIssueCount = Math.min(visibleIssueCount, sortedIssues.length);
   const playbooks = toPlaybooks(data.suggestions, data.issues);
   const largestFilesToShow = showAllLargestFiles ? data.largestFiles : data.largestFiles.slice(0, 6);
   const tabItems = [
@@ -229,11 +235,26 @@ export default function ReportPage(): JSX.Element {
           <MetricCard label="Re-render Risks" value={data.bundleInsights.rerenderRiskCount} />
         </div>
 
+        {data.summary.subScores ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard label="Bundle Score" value={`${data.summary.subScores.bundle}/100`} />
+            <MetricCard label="Rendering Score" value={`${data.summary.subScores.rendering}/100`} />
+            <MetricCard label="Complexity Score" value={`${data.summary.subScores.complexity}/100`} />
+            <MetricCard label="Maintainability Score" value={`${data.summary.subScores.maintainability}/100`} />
+          </div>
+        ) : null}
+
         <div className={`mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${scoreTone}`}>
           <span>Performance Score: {score}/100</span>
           <span className="opacity-70">|</span>
           <span>{scoreLabel}</span>
         </div>
+        {typeof data.summary.issueDensity === "number" ? (
+          <p className="mt-2 text-xs text-slate-500">
+            Issue density: {data.summary.issueDensity} per 100 files
+            {data.summary.methodologyVersion ? ` · Scoring ${data.summary.methodologyVersion}` : ""}
+          </p>
+        ) : null}
       </div>
 
       <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -358,11 +379,16 @@ export default function ReportPage(): JSX.Element {
           <section className="px-4 pb-4 sm:px-6 sm:pb-6">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <h2 className="text-xl font-semibold text-slate-900">Prioritized Issues</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold text-slate-900">Prioritized Issues</h2>
+                <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800">
+                  Showing {shownIssueCount} of {sortedIssues.length} issues
+                </span>
+              </div>
               <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Workflow board</p>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-xl border border-slate-200 bg-white p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Status</p>
                 <CustomSelect
@@ -412,14 +438,6 @@ export default function ReportPage(): JSX.Element {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Result count</p>
-                <p className="text-sm text-slate-700">
-                  Showing <span className="font-semibold">{Math.min(visibleIssueCount, sortedIssues.length)}</span> of{" "}
-                  <span className="font-semibold">{sortedIssues.length}</span>
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</p>
                 <button
                   type="button"
@@ -434,6 +452,7 @@ export default function ReportPage(): JSX.Element {
                   Reset filters
                 </button>
               </div>
+
             </div>
 
             {progressError ? <p className="mt-3 text-sm text-rose-700">{progressError}</p> : null}
